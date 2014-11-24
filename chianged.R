@@ -1,20 +1,25 @@
+### Uncomment line 11 and line 18 to see the local and global GIFs
+
+
+########  RUN LOCAL SIMULATIONS 
 conditions <- c("S", "R", "C", "E")
-max <- createMatrix(conditions, nrows=10, ncols=10)
+max <- createMatrix(conditions, nrows = 50, ncols = 50)
+bigmax <- runLocalSims2(max)
+###### MAKE LINE PLOT FOR LOCAL
+plotLogTime(bigmax, "Local")
+### TIME TO GIF IT OUT  
+#gif(bigmax)
 
-
-
-loc <- findLocal(max)
-blerp <- findWinner(max, loc);
-arf <- findLocalWinner(max)
-max == arf
-
-
+########  RUN GLOBAL SIMULATIONS 
+cultbigmax <- runGlobalSims2(max) # cult = culture, we're going global
+###### MAKE LINE PLOT FOR GLOBAL
+plotLogTime(cultbigmax, "Global")
+### TIME TO GIF IT OUT
+#gif(cultbigmax)
 
 ###########################################################################################
-
-
 createMatrix <- function(variable, nrows=50, ncols=50){
-  matrix(sample(variable, nrows*ncols, TRUE), nrow = nrows, ncol = ncols)
+  matrix(sample(variable, nrows*ncols, replace =TRUE), nrow = nrows, ncol = ncols)
   #Variable must be a list of conditions to add to each cell of the matrix
   #Help from:  http://stackoverflow.com/questions/16915853/r-generate-an-simple-integer-matrix-with-defined-number-of-row-and-column
 }
@@ -30,7 +35,7 @@ findIndex <- function(matrix){
   return(info); # print character list where seat 1 is nrow, seat 2 is ncol, and seat 3 is condition in cell
 }
 
-
+##############################   Search for the Local Cells ########################
 findLocal <- function(matrix){ #, nsim=3000
   info <- findIndex(matrix)
   nrow <- as.numeric(info[1])  #get row index
@@ -122,19 +127,14 @@ findLocal <- function(matrix){ #, nsim=3000
   return(local)
 }
 
-
-findWinner <- function (matrix, local){
+#######################  FIND THE LOCAL WINNER ######################################
+findWinnerLoc <- function (matrix, local){
   nrow1 <- as.numeric(local[9])  #get row index
   ncol1 <- as.numeric(local[10])  #get column index
   index_value <- local[11]  #get index value
   local <- local[1:8]
   ########## INCLUDE PROBABILITIES
-  #probs <- prop.table(table(local)) # make proprotions of the local cells
-  fC <- length(which(local == "C"))/8  
-  fR <- length(which(local == "R"))/8
-  fS <- length(which(local == "S"))/8
-  fE <- length(which(local == "E"))/8
-  #fC <- probs["C"] #find proportion of C 
+  fC <- sum(local == "C")/8  
   if(index_value == "S") {
     deltaSO <- 1/4 #natural death of S
     tau <- 3/4 #toxicity of colicin 
@@ -153,77 +153,174 @@ findWinner <- function (matrix, local){
     c_winner <- sample(c("C", "E"), 1, prob = c(c_survive, c_death)) #survival vs death
     matrix[nrow1, ncol1] <- c_winner #replace with new outcome
   } else {
-    #fS <- probs["S"] #make proportion of local cells that are S
-    #fR <- probs["R"] #make proportion of local cells that are R 
-    #fE <- 1- fS - fR - fC #make proportion of local cells that are E
+    fR <- sum(local == "R")/8
+    fS <- sum(local == "S")/8
+    fE <- sum(local == "E")/8
     e_winner <- sample(c("S", "R", "C", "E"), 1, prob = c(fS, fR, fC, fE))   #dispersal
     matrix[nrow1, ncol1] <- e_winner }   #replace with new outcome
   return(matrix)
 }
 
+
+##########################  Combine the local and calculate the winner #####################################
 findLocalWinner <- function(matrix){
   loca <- findLocal(matrix)
-  wins <- findWinner(matrix, loca)
+  wins <- findWinnerLoc(matrix, loca)
   return(wins)
 }
 
 
-
-
-runSims <- function(matrix){
-  conds <- c("NA")
-  rawsim <- createMatrix(conds, nrows = 100, ncols = 2500000)
-  rawsim[,1] <- matrix #data frame for raw (every sim) simulation data 
-  time_step <- createMatrix(conds, nrows = 100, ncols = 1000)
-  for (i in 2:ncol(rawsim)-1){
-    work <- matrix(rawsim[,i], nrow = 10, ncol = 10)  #make matrix from nas
-    sim_win <- findLocalWinner(work)  #run findlocalwinner
-    vec <- as.vector(sim_win)  #make findlocalwiner a vector
-    rawsim[ ,i+1] <- vec #append vector to rawsim + 1
-    if ((i+1)%%2500 == 0){ #if divisible by 2500 do ...
-      time_step[,(i+1)/2500] <- rawsim[ ,i+1]  # append to new matrix called time_step 
+##########################  LOCAL SIMULATIONS #####################################
+runLocalSims2 <- function(matrix){ #This one goes faster!
+  colDim <- nrow(matrix)*ncol(matrix) # column dimensions
+  conds <- c("NA")  #fill matrix on next line with NAs
+  time_step <- createMatrix(conds, nrows = colDim, ncols = 1001) #Make a matrix of NAs 
+  j <- 1 # column to be filled in time_step matrix
+  work <- matrix # will be updated with each for loop, this initiates the process.
+  for (i in 1:(colDim*1000)) {
+    if (i == 1 | i %% colDim == 0) { # ORDER IMPORTANT: if divisible by 2500 do ...
+      time_step[,j] <- work  # append to new matrix called time_step
+      j <- j + 1 # for next iteration
     }
+    work <- findLocalWinner(work)  #run findlocalwinner
   } 
+  colnames(time_step) <- 1:1001 # name all columns by numer of col
   return(time_step)
 }  
+##############################################################################
 
 
-abundCols <- function(time_step){ #create a table with 4 rows (S, R, E, C) and their freq in all columns
+
+
+##############################   Global Calculations and Simulations   ########################
+findWinnerGlobal <- function(matrix) {  #This finds the global winner
+  index_info <- findIndex(matrix) #nrow, ncol, 
+  nrow1 <- as.numeric(index_info[1])  #get row index
+  ncol1 <- as.numeric(index_info[2])  #get column index
+  index_value <- index_info[3]  #get index value
+  colDim <- nrow(matrix)*ncol(matrix)
+  ########## INCLUDE PROBABILITIES
+  maxVec <- as.vector(matrix)
+  if(index_value == "S") { 
+    fC <- sum(maxVec == "C")/colDim
+    deltaSO <- 1/4 #natural death of S
+    tau <- 3/4 #toxicity of colicin 
+    s_death <- deltaSO + tau*fC    #death
+    s_survive <- 1 - s_death    #survival
+    s_winner <- sample(c("S", "E"), 1, prob = c(s_survive, s_death)) #survival vs. death
+    matrix[nrow1, ncol1] <- s_winner #replace with new outcome
+  } else if(index_value == "R") {
+    r_death <- 10/32  #death
+    r_survive <- 1- r_death   #survival
+    r_winner <- sample(c("R", "E"), 1, prob = c(r_survive, r_death)) #survival  
+    matrix[nrow1, ncol1] <- r_winner #replace with new outcome
+  } else if(index_value == "C") {
+    c_death <- 1/3  #death
+    c_survive <-  1 - c_death #survival
+    c_winner <- sample(c("C", "E"), 1, prob = c(c_survive, c_death)) #survival vs death
+    matrix[nrow1, ncol1] <- c_winner #replace with new outcome
+  } else {
+    fC <- sum(maxVec == "C")/colDim
+    fR <- sum(maxVec == "R")/colDim 
+    fS <- sum(maxVec == "S")/colDim
+    fE <- (sum(maxVec == "E") - sum(index_value == "E"))/colDim 
+    e_winner <- sample(c("S", "R", "C", "E"), 1, prob = c(fS, fR, fC, fE))   #dispersal
+    matrix[nrow1, ncol1] <- e_winner }   #replace with new outcome
+  return(matrix)
+}
+
+
+runGlobalSims2  <- function(matrix) {  #Runs global simulations
+  colDim <- nrow(matrix)*ncol(matrix) # column dimensions
+  conds <- c("NA") #fill matrix on next line with NAs
+  time_step <- createMatrix(conds, nrows = colDim, ncols = 501) #Make a matrix of NAs 
+  j <- 1 # column to be filled in time_step matrix
+  work <- matrix # will be updated with each for loop, this initiates the process.
+  for (i in 1:(colDim*500)){
+    if (i == 1 | i %% colDim == 0){ # ORDER IMPORTANT: if divisible by 2500 do ...
+      time_step[,j] <- work  # append to new matrix called time_step
+      j <- j + 1 #next for loop, fill in the next column
+    }
+    work <- findWinnerGlobal(work)  #run findlocalwinner
+  } 
+  colnames(time_step) <- 1:501
+  return(time_step)
+}  
+###########################################################################################
+
+
+
+
+###########################################################################################
+########################   CHANGE MATRIX FROM CHARACTERS TO NUMBERS   ##########################
+#This function is an all-in-one charToNum + numMat, thanks to pat :)
+chartoNumNum <- function(matrix){  
+  ifelse(matrix == "R",1, ifelse(matrix == "C",2, ifelse(matrix == "S", 3, 4)))
+}
+
+
+########################## TAKE A COLUMN of TABLE AND MAKE A MATRIX  ##########################
+colMatrix <- function(colMat){  #for one column make a matrix
+  #i <- sqrt(nrow(colMat))
+  return(matrix(colMat, nrow = 50, ncol = 50))
+}
+
+########################## TAKE MATRIX MAKE HEATPLOT  ##########################
+plotHeat <- function(newmat){
+  colors <- c("forestgreen", "red", "blue","white")
+  image(z=newmat, axes = FALSE, col = colors) #x=1:nrow(newmat), y=1:ncol(newmat),
+}
+
+
+
+
+
+##########################  MAKE A GIF WITH MANY PLOTS ##########################
+#http://stackoverflow.com/questions/9973610/using-the-animation-package
+install.packages('animation')
+library(animation)
+gif <- function(bigmatrix) {
+  namat <- chartoNumNum(bigmatrix)
+  oopt <- ani.options(interval = 0.1, nmax = ncol(namat))
+  for(i in 1:ani.options("nmax")){
+    mat <- colMatrix(namat[,i])
+    plotHeat(mat)
+    ani.pause()
+  }
+}
+##############################################################################
+
+
+
+##############################################################################
+##########################   FREQUENCY OF EACH CONDITION ##########################
+freqConds <- function(time_step){ #create a table with 4 rows (S, R, E, C) and their freq in all columns
   gahhh <- as.data.frame(time_step)
   oop <- sapply(gahhh, function(x) table(factor(x, levels=conditions)))
-  loop <- log(oop)
+  loop <- log10(oop)
   loop[is.infinite(loop)] = 0  
   loop <- as.data.frame(loop)
-  colnames(loop) <- 1:1000
+  colnames(loop) <- 1:ncol(time_step)
   return(loop)
 }
 
-plotLocal <- function(abundCol_output){
-  ff <- as.data.frame(t(abundCol_output))
-  plot(ff$R, type="l", col=" forest green", ylim=c(0,5), main="Local Neighborhood", xlab="Time",ylab="Log(abundance)")
-  lines(ff$S, type="l", col="blue")
-  lines(ff$C, type="l", col="red")
-  legend(x=750, y=3.5,c("C","R","S"), col=c("red","forest green","blue"), lwd=5)
 
+plotLogTime <- function(time_step, title){
+  freqConds_output <- freqConds(time_step)
+  ff <- as.data.frame(t(freqConds_output))
+  plot(ff$S, type = "l", col = "blue", xlim=c(0,ncol(freqConds_output)),ylim=c(0,5), main = c(title, "Neighborhood"),
+       xlab = "Time", ylab = "Log(abundance)", lwd = 2, bty = "n") 
+  lines(ff$E, type = "l", col = "black", lwd = 2)  
+  lines(ff$C, type = "l", col = "red", lwd = 2)
+  lines(ff$R, type = "l", col = "forestgreen", lwd = 2) 
+  legend("bottomright",c("S","R","C","E"),col=c("blue","forestgreen","red","black"),lty = 1, lwd = 3)
 }
+##############################################################################
 
 
 
-conditions <- c("S", "R", "C", "E")
-max <- createMatrix(conditions, nrows=10, ncols=10)
-rar <- runSims(max)
-eeee <- abundCols(rar)
+#drawbacks of this model:
+### Evolution of S to R?????
+### death within local?
 
 
-heat <- rar[E]
-
-
-heatmap(rar)
-
-
-
-
-
-# C = Red
-# S = Blue
-# R = Green
