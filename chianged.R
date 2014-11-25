@@ -17,6 +17,29 @@ plotLogTime(cultbigmax, "Global")
 ### TIME TO GIF IT OUT
 #gif(cultbigmax)
 
+
+
+loc <- chartoNumNum(bigmax)
+loc1 <- colMatrix(loc[,300])
+glob <- chartoNumNum(cultbigmax)
+glob1 <- colMatrix(glob[,300])
+
+colors <- c("forestgreen", "red", "blue","white")
+par(mfrow=c(2,2))
+image(z=loc1, axes = FALSE, col = colors)
+plotLogTime(bigmax, "Local")
+image(z=glob1, axes = FALSE, col = colors)
+plotLogTime(cultbigmax, "Global")
+
+
+par(mfrow=c(2,1))
+plotLogTime(bigmax, "Local")
+plotLogTime(cultbigmax, "Global")
+
+
+
+
+
 ###########################################################################################
 createMatrix <- function(variable, nrows=50, ncols=50){
   matrix(sample(variable, nrows*ncols, replace =TRUE), nrow = nrows, ncol = ncols)
@@ -271,17 +294,13 @@ plotHeat <- function(newmat){
   image(z=newmat, axes = FALSE, col = colors) #x=1:nrow(newmat), y=1:ncol(newmat),
 }
 
-
-
-
-
 ##########################  MAKE A GIF WITH MANY PLOTS ##########################
 #http://stackoverflow.com/questions/9973610/using-the-animation-package
-install.packages('animation')
+install.packages("animation")
 library(animation)
 gif <- function(bigmatrix) {
   namat <- chartoNumNum(bigmatrix)
-  oopt <- ani.options(interval = 0.1, nmax = ncol(namat))
+  oopt <- ani.options(interval = 0., nmax = ncol(namat))
   for(i in 1:ani.options("nmax")){
     mat <- colMatrix(namat[,i])
     plotHeat(mat)
@@ -310,17 +329,9 @@ plotLogTime <- function(time_step, title){
   ff <- as.data.frame(t(freqConds_output))
   plot(ff$S, type = "l", col = "blue", xlim=c(0,ncol(freqConds_output)),ylim=c(0,5), main = c(title, "Neighborhood"),
        xlab = "Time", ylab = "Log(abundance)", lwd = 2, bty = "n") 
-  lines(ff$E, type = "l", col = "black", lwd = 2)  
+  #lines(ff$E, type = "l", col = "black", lwd = 2)  
   lines(ff$C, type = "l", col = "red", lwd = 2)
   lines(ff$R, type = "l", col = "forestgreen", lwd = 2) 
-  legend("bottomright",c("S","R","C","E"),col=c("blue","forestgreen","red","black"),lty = 1, lwd = 3)
+  legend("bottomright",c("S","R","C"),col=c("blue","forestgreen","red"),lty = 1, lwd = 3)
 }
 ##############################################################################
-
-
-
-#drawbacks of this model:
-### Evolution of S to R?????
-### death within local?
-
-
