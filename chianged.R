@@ -310,34 +310,6 @@ gif <- function(bigmatrix) {
 }
 
 
-saveHTML({
-  namat <- chartoNumNum(bigmax)
-  oopt <- ani.options(interval = 0., nmax = ncol(namat))
-  for(i in 1:ani.options("nmax")){
-    mat <- colMatrix(namat[,i])
-    plotHeat(mat)
-    ani.pause()
-  }
-}, img.name = "local_plot", imgdir = "local_dir", htmlfile = "local.html", autobrowse = FALSE, 
-title = "Local Heatmap", description = "Local Heatmap")
-
-
-
-
-
-install.package('caTools')
-library(caTools)
-write.gif(image=gif(bigmax), filename="Local")
-
-read.gif(filename=gif(bigmax))
-
-
-par(saveHTML(gif(bigmax), img.name = "Local", htmlfile="Local"))
-
-
-
-
-
 ##############################################################################
 
 
