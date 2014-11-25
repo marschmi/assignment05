@@ -1,7 +1,8 @@
 ### Uncomment line 11 and line 18 to see the local and global GIFs
 
 
-########  RUN LOCAL SIMULATIONS 
+########  RUN LOCAL SIMULATIONS
+set.seed(1)
 conditions <- c("S", "R", "C", "E")
 max <- createMatrix(conditions, nrows = 50, ncols = 50)
 bigmax <- runLocalSims2(max)
@@ -307,6 +308,36 @@ gif <- function(bigmatrix) {
     ani.pause()
   }
 }
+
+
+saveHTML({
+  namat <- chartoNumNum(bigmax)
+  oopt <- ani.options(interval = 0., nmax = ncol(namat))
+  for(i in 1:ani.options("nmax")){
+    mat <- colMatrix(namat[,i])
+    plotHeat(mat)
+    ani.pause()
+  }
+}, img.name = "local_plot", imgdir = "local_dir", htmlfile = "local.html", autobrowse = FALSE, 
+title = "Local Heatmap", description = "Local Heatmap")
+
+
+
+
+
+install.package('caTools')
+library(caTools)
+write.gif(image=gif(bigmax), filename="Local")
+
+read.gif(filename=gif(bigmax))
+
+
+par(saveHTML(gif(bigmax), img.name = "Local", htmlfile="Local"))
+
+
+
+
+
 ##############################################################################
 
 
