@@ -1,5 +1,5 @@
 ---
-title: "The Maintenance of Biodiversity in a Dispersal-Limited Strains of E. coli"
+title: "The Maintenance of Biodiversity in Dispersal-Limited Strains of E. coli"
 author: "Edna Chiang and Marian Schmidt"
 date: "November 24, 2014"
 output:
@@ -290,6 +290,47 @@ plotLogTime <- function(time_step, title){
 
 
 
+## TIME TO GIF IT OUT  
+
+###########################################################################################
+########################   CHANGE MATRIX FROM CHARACTERS TO NUMBERS   ##########################
+#This function is an all-in-one charToNum + numMat, thanks to pat :)
+chartoNumNum <- function(matrix){  
+  ifelse(matrix == "R",1, ifelse(matrix == "C",2, ifelse(matrix == "S", 3, 4)))
+}
+
+
+########################## TAKE A COLUMN of TABLE AND MAKE A MATRIX  ##########################
+colMatrix <- function(colMat){  #for one column make a matrix
+  #i <- sqrt(nrow(colMat))
+  return(matrix(colMat, nrow = 50, ncol = 50))
+}
+
+########################## TAKE MATRIX MAKE HEATPLOT  ##########################
+plotHeat <- function(newmat){
+  colors <- c("forestgreen", "red", "blue","white")
+  image(z=newmat, axes = FALSE, col = colors) #x=1:nrow(newmat), y=1:ncol(newmat),
+}
+
+##########################  MAKE A GIF WITH MANY PLOTS ##########################
+#http://stackoverflow.com/questions/9973610/using-the-animation-package
+#install.packages("animation")
+library(animation)
+gif <- function(bigmatrix) {
+  namat <- chartoNumNum(bigmatrix)
+  oopt <- ani.options(interval = 0.1, nmax = ncol(namat))
+  for(i in 1:ani.options("nmax")){
+    mat <- colMatrix(namat[,i])
+    plotHeat(mat)
+    ani.pause()
+  }
+}
+##############################################################################
+
+
+
+
+
 ########  RUN LOCAL SIMULATIONS 
 conditions <- c("S", "R", "C", "E")
 max <- createMatrix(conditions, nrows = 50, ncols = 50)
@@ -299,12 +340,16 @@ bigmax <- runLocalSims2(max)
 cultbigmax <- runGlobalSims2(max) # cult = culture, we're going global
 
 #### MAKE PLOT
-par(mfrow=c(2,1))
 plotLogTime(bigmax, "Local")   ###### MAKE LINE PLOT FOR LOCAL
 plotLogTime(cultbigmax, "Global")    ###### MAKE LINE PLOT FOR GLOBAL
+saveHTML(gif(bigmax), img.name = "Local", htmlfile="Local")
+saveHTML(gif(cultbigmax), img.name="Global", htmlfil="Global")
+
 
 ```
 
+
+##GIFs  
 
 
 
@@ -407,7 +452,6 @@ expbigmax <- runGlobalSims2(max) # cult = culture, we're going global
 
 
 #### MAKE PLOT
-par(mfrow=c(2,1))
 plotLogTime(expmax, "Local")   ###### MAKE LINE PLOT FOR LOCAL
 plotLogTime(expbigmax, "Global")    ###### MAKE LINE PLOT FOR GLO
 
@@ -422,42 +466,6 @@ plotLogTime(expbigmax, "Global")    ###### MAKE LINE PLOT FOR GLO
 
 ```{r, echo = FALSE}
 
-## TIME TO GIF IT OUT  
-
-###########################################################################################
-########################   CHANGE MATRIX FROM CHARACTERS TO NUMBERS   ##########################
-#This function is an all-in-one charToNum + numMat, thanks to pat :)
-chartoNumNum <- function(matrix){  
-  ifelse(matrix == "R",1, ifelse(matrix == "C",2, ifelse(matrix == "S", 3, 4)))
-}
-
-
-########################## TAKE A COLUMN of TABLE AND MAKE A MATRIX  ##########################
-colMatrix <- function(colMat){  #for one column make a matrix
-  #i <- sqrt(nrow(colMat))
-  return(matrix(colMat, nrow = 50, ncol = 50))
-}
-
-########################## TAKE MATRIX MAKE HEATPLOT  ##########################
-plotHeat <- function(newmat){
-  colors <- c("forestgreen", "red", "blue","white")
-  image(z=newmat, axes = FALSE, col = colors) #x=1:nrow(newmat), y=1:ncol(newmat),
-}
-
-##########################  MAKE A GIF WITH MANY PLOTS ##########################
-#http://stackoverflow.com/questions/9973610/using-the-animation-package
-#install.packages("animation")
-library(animation)
-gif <- function(bigmatrix) {
-  namat <- chartoNumNum(bigmatrix)
-  oopt <- ani.options(interval = 0., nmax = ncol(namat))
-  for(i in 1:ani.options("nmax")){
-    mat <- colMatrix(namat[,i])
-    plotHeat(mat)
-    ani.pause()
-  }
-}
-##############################################################################
 
 
 
