@@ -353,7 +353,6 @@ saveHTML(gif(cultbigmax), img.name="Global", htmlfil="Global")
 
 
 
-
 ##Experiment
 As you can see above, R wins the global scenario.  This is because R has a slighly lower death rate of 10/32 than the C, which has a death rate of 1/3, so R can outcompete C.  We are curious as to the outcome if both death rates are equivalent.
 
